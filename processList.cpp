@@ -73,9 +73,8 @@ int getCpuUsageInfo(int &cpuTotalTime, int &cpuIdleTime)
         fprintf(stderr, "Can not open file /proc/stat.\n");
         return -1;
     }
-    fclose(stream);
-
     fgets(buf, 1000, stream);
+    fclose(stream);
     int user, nice, system, idle, iowait, irq, softirq, stealstolen, guest, extTime;
     sscanf(buf + 5, "%d%d%d%d%d%d%d%d%d%d",
            &user, 
@@ -98,14 +97,16 @@ int getProcInfo(Process &proc, int &cpuTime)
 {
     FILE *stream;
     char buf[1000];
+    char pidStr[100];
+    sprintf(pidStr,"%d",proc.pid);
     string fileName;
     fileName += "/proc/";
-    fileName += proc.pid;
+    fileName += pidStr;
     fileName += "/stat";
 
     if ((stream = fopen(fileName.c_str(), "r")) == NULL)
     {
-        fprintf(stderr, "Can not open file /proc/stat.\n");
+        fprintf(stderr, string(string("Can not open file ")+fileName+string("\n")).c_str());
         return -1;
     }
     fgets(buf, 1000, stream);
@@ -146,7 +147,7 @@ int getCpuUsage(double &cpuUsage)
 {
     int cpuTotalTime1,cpuTotalTime2,cpuIdleTime1,cpuIdleTime2;
     if(getCpuUsageInfo(cpuTotalTime1, cpuIdleTime1))return -1;
-    //sleep
+    usleep(50000);
     if(getCpuUsageInfo(cpuTotalTime2, cpuIdleTime2))return -1;
     cpuUsage = (double)(cpuTotalTime2 - cpuTotalTime1 - cpuIdleTime2 + cpuIdleTime1) /
                (double)(cpuTotalTime2 - cpuTotalTime1);
@@ -159,11 +160,13 @@ int getProcCpuUsage(Process &proc,double &procCpuUsage)
     int cpuTotalTime1,cpuTotalTime2,cpuIdleTime1,cpuIdleTime2;
     if(getProcInfo(proc,procCpuTime1))return -1;
     if(getCpuUsageInfo(cpuTotalTime1, cpuIdleTime1))return -1;
-    usleep(1000);
+    usleep(50000);
     if(getProcInfo(proc,procCpuTime2))return -1;
     if(getCpuUsageInfo(cpuTotalTime2, cpuIdleTime2))return -1;
     procCpuUsage=(double)(procCpuTime2 - procCpuTime1) /
                (double)(cpuTotalTime2 - cpuTotalTime1);
+
+    return 0;
 }
 
 int getProcessList(vector<Process> &processList)
@@ -201,16 +204,38 @@ int getProcessList(vector<Process> &processList)
 
 
 #ifdef unitTest 
-int main()
+int unitTest1()
 {
     vector<Process> processList;
     double usage;
-    while(1)
+    for(size_t i = 0; i < 20; i++)
     {
         getCpuUsage(usage);
-        printf("%lf",usage);
+        printf("%lf\n",usage);
     }
     return 0;
 }
+
+int unitTest2()
+{
+    vector<Process> processList;
+    double usage;
+    getProcessList(processList);
+    for(size_t i = 0; i < processList.size(); i++)
+    {
+        if(processList[i].cpuUsage==0)continue;
+        cout<<"<<<<<<<<<<<<\n"
+        <<processList[i].pid<<"\n"
+        <<processList[i].cpuUsage<<"\n";
+    }
+    
+    return 0;
+}
+
+int main()
+{
+    unitTest2();
+}
+
 
 #endif
