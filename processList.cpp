@@ -1,3 +1,5 @@
+#include "processList.h"
+
 //linux head
 #include <getopt.h>
 #include <sched.h>
@@ -31,40 +33,9 @@
 
 using namespace std;
 
-#define unitTest
+// #define unitTest
 
-struct Process
-{
-    pid_t pid;
-    double cpuUsage;
-    double memoryUsage;
-    string comm,
-        task_state;
-    int ppid,
-        pgid,
-        sid,
-        tty_nr,
-        tty_pgrp;
-    unsigned int task_flags;
-    unsigned long min_flt,
-        cmin_flt,
-        maj_flt,
-        cmaj_flt,
-        utime,
-        stime;
-    long cutime,
-        cstime,
-        priority,
-        nice,
-        num_threads,
-        it_real_value;
-    unsigned long long start_time;
-    unsigned long vsize;
-    long rss;
-    unsigned long rsslim;
-};
-
-int getCpuUsageInfo(int &cpuTotalTime, int &cpuIdleTime)
+int getCpuUsageInfo(unsigned long &cpuTotalTime, unsigned long &cpuIdleTime)
 {
     FILE *stream;
     char buf[1000];
@@ -94,7 +65,7 @@ int getCpuUsageInfo(int &cpuTotalTime, int &cpuIdleTime)
     return 0;
 }
 
-int getProcInfo(Process &proc, int &cpuTime)
+int getProcInfo(Process &proc, unsigned long &cpuTime)
 {
     FILE *stream;
     char buf[1000];
@@ -156,7 +127,7 @@ int getProcInfo(Process &proc, int &cpuTime)
 
 int getCpuUsage(double &cpuUsage)
 {
-    int cpuTotalTime1,cpuTotalTime2,cpuIdleTime1,cpuIdleTime2;
+    unsigned long cpuTotalTime1,cpuTotalTime2,cpuIdleTime1,cpuIdleTime2;
     if(getCpuUsageInfo(cpuTotalTime1, cpuIdleTime1))return -1;
     usleep(50000);
     if(getCpuUsageInfo(cpuTotalTime2, cpuIdleTime2))return -1;
@@ -167,8 +138,8 @@ int getCpuUsage(double &cpuUsage)
 
 int getProcCpuUsage(Process &proc,double &procCpuUsage)
 {
-    int procCpuTime1,procCpuTime2;
-    int cpuTotalTime1,cpuTotalTime2,cpuIdleTime1,cpuIdleTime2;
+    unsigned long procCpuTime1,procCpuTime2;
+    unsigned long cpuTotalTime1,cpuTotalTime2,cpuIdleTime1,cpuIdleTime2;
     if(getProcInfo(proc,procCpuTime1))return -1;
     if(getCpuUsageInfo(cpuTotalTime1, cpuIdleTime1))return -1;
     usleep(50000);
@@ -204,7 +175,11 @@ int getProcessList(vector<Process> &processList)
     for(size_t i = 0; i < processList.size(); i++)
     {
         double usage;
-        if(!getProcCpuUsage(processList[i],usage))
+        if(getProcInfo(processList[i],processList[i].cpuTime))
+        {
+            processList.erase(processList.begin()+i);
+            continue;
+        }
         processList[i].cpuUsage=usage;
     }
     
@@ -212,7 +187,92 @@ int getProcessList(vector<Process> &processList)
     return 0;
 }
 
+int getProcessListWithOutCpuUsageFirst(vector<Process> &processList)
+{
+    processList.clear();
+    struct stat statInfo;
+    DIR *dir;
+    struct dirent *ent;
 
+    dir = opendir("/proc");
+
+    while ((ent = readdir(dir)) != (struct dirent *)NULL)
+    {
+        if (*ent->d_name > '0' && *ent->d_name <= '9')
+        {
+            pid_t pid;
+            sscanf(ent->d_name, "%d", &pid);
+            Process proc;
+            proc.pid=pid;
+            processList.push_back(proc);
+        }
+    }
+    closedir(dir);
+    for(size_t i = 0; i < processList.size(); i++)
+    {
+        double usage;
+        if(getProcInfo(processList[i],processList[i].cpuTime))
+        {
+            processList.erase(processList.begin()+i);
+            continue;
+        }
+        unsigned long time;
+        getCpuUsageInfo(processList[i].cpuTotalTime,time);
+        processList[i].cpuUsage=0;
+    }
+    
+
+    return 0;
+}
+
+int getProcessListWithOutCpuUsageUpdate(vector<Process> &processList)
+{
+    vector<Process> processListNew;
+    struct stat statInfo;
+    DIR *dir;
+    struct dirent *ent;
+
+    dir = opendir("/proc");
+
+    while ((ent = readdir(dir)) != (struct dirent *)NULL)
+    {
+        if (*ent->d_name > '0' && *ent->d_name <= '9')
+        {
+            pid_t pid;
+            sscanf(ent->d_name, "%d", &pid);
+            Process proc;
+            proc.pid=pid;
+            processListNew.push_back(proc);
+        }
+    }
+    closedir(dir);
+    for(size_t i = 0; i < processListNew.size(); i++)
+    {
+        double usage;
+        if(getProcInfo(processListNew[i],processListNew[i].cpuTime))
+        {
+            processListNew.erase(processListNew.begin()+i);
+            continue;
+        }
+        processListNew[i].cpuUsage=0;
+    }
+    size_t j=0;
+    for(size_t i = 0; i < processListNew.size(); i++)
+    {
+        while(processList[j].pid<=processListNew[i].pid)
+        {
+            if(processList[j].pid==processListNew[i].pid)
+            {
+                processListNew[i].cpuUsage=(double)(processListNew[i].cpuTime - processList[j].cpuTime) /
+               (double)(processListNew[i].cpuTotalTime - processList[j].cpuTotalTime);
+            }
+            j++;
+        }
+    }
+    processList=processListNew;
+
+    return 0;
+}
 
 #ifdef unitTest 
 int unitTest1()
@@ -261,7 +321,7 @@ int unitTest3()
 
 int main()
 {
-    unitTest3();
+    unitTest1();
 }
 
 

@@ -1,5 +1,33 @@
 #include "affinity.h"
+#include "processList.h"
+//linux head
+#include <getopt.h>
+#include <sched.h>
+#include <unistd.h> 
+
+//c head
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+//cpp head
+#include <iostream>
+#include <string>
+#include <queue>
+#include <stack>
+#include <vector>
+#include <functional>
+#include <algorithm>
+#include <cassert>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
+using namespace std;
+
 #define debug
+#define unitTest 
 
 /* -------------------------------------
 setProcessAffinity
@@ -27,7 +55,7 @@ int setProcessAffinity(int pid)
     CPU_CLR(0, &mask); /* clear CPU0 from cpu set */
 
     /* Set the CPU affinity for a pid */
-    if (sched_setaffinity(0, sizeof(cpu_set_t), &mask) == -1)
+    if (sched_setaffinity(pid, sizeof(cpu_set_t), &mask) == -1)
     {
         return -1;
     }
@@ -35,7 +63,12 @@ int setProcessAffinity(int pid)
 #ifdef debug
     /* get logical cpu number */
     nrcpus = sysconf(_SC_NPROCESSORS_CONF);
-
+    cout<<pid<<endl;
+    /* Get the CPU affinity for a pid */
+    if (sched_getaffinity(pid, sizeof(cpu_set_t), &mask) == -1)
+    {
+        return -1;
+    }
     for (i = 0; i < nrcpus; i++)
     {
         if (CPU_ISSET(i, &mask))
@@ -45,6 +78,7 @@ int setProcessAffinity(int pid)
         }
     }
     printf("bitmask = %#lx\n", bitmask);
+    cout<<"<<<<<<<<<<<<<<\n";
 #endif
 
     return 0;
@@ -72,7 +106,7 @@ int clearProcessAffinity(int pid)
     CPU_SET(0, &mask); /* add CPU0 to cpu set */
 
     /* Set the CPU affinity for a pid */
-    if (sched_setaffinity(0, sizeof(cpu_set_t), &mask) == -1)
+    if (sched_setaffinity(pid, sizeof(cpu_set_t), &mask) == -1)
     {
         return -1;
     }
@@ -80,7 +114,12 @@ int clearProcessAffinity(int pid)
 #ifdef debug
     /* get logical cpu number */
     nrcpus = sysconf(_SC_NPROCESSORS_CONF);
-
+    cout<<pid<<endl;
+    /* Get the CPU affinity for a pid */
+    if (sched_getaffinity(pid, sizeof(cpu_set_t), &mask) == -1)
+    {
+        return -1;
+    }
     for (i = 0; i < nrcpus; i++)
     {
         if (CPU_ISSET(i, &mask))
@@ -90,6 +129,7 @@ int clearProcessAffinity(int pid)
         }
     }
     printf("bitmask = %#lx\n", bitmask);
+    cout<<"<<<<<<<<<<<<<<\n";
 #endif
 
     return 0;
@@ -98,7 +138,17 @@ int clearProcessAffinity(int pid)
 int spareOneCore(vector<int>&operateRecord)
 {
     operateRecord.clear();
-
+    vector<Process>processList;
+    getProcessList(processList);
+    for(size_t i = 0; i < processList.size(); i++)
+    {
+        if(processList[i].cpuUsage>0.2)
+        {
+            operateRecord.push_back(processList[i].pid);
+            setProcessAffinity(processList[i].pid);
+        }
+    }
+    
     return 0;
 }
 
@@ -112,3 +162,21 @@ int undoSpare(vector<int>&operateRecord)
     
     return 0;
 }
+
+#ifdef unitTest
+
+int unitTest1()
+{
+    vector<int>operateRecord;
+    spareOneCore(operateRecord);
+    undoSpare(operateRecord);
+    return 0;
+}
+
+int main()
+{
+    unitTest1();
+    return 0;
+}
+
+#endif

@@ -1,27 +1,10 @@
-#define _GNU_SOURCE
+#ifndef affinity_h
+#define affinity_h
 
-//linux head
-#include <getopt.h>
-#include <sched.h>
-#include <unistd.h> 
-
-//c head
-#include <math.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-//cpp head
-#include <iostream>
-#include <string>
-#include <queue>
-#include <stack>
 #include <vector>
-#include <functional>
-#include <algorithm>
-#include <cassert>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-
 using namespace std;
+
+int spareOneCore(vector<int>&operateRecord);
+int undoSpare(vector<int>&operateRecord);
+
+#endif
