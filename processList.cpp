@@ -44,23 +44,24 @@ struct Process
         pgid,
         sid,
         tty_nr,
-        tty_pgrp,
-        task_flags,
-        min_flt,
+        tty_pgrp;
+    unsigned int task_flags;
+    unsigned long min_flt,
         cmin_flt,
         maj_flt,
         cmaj_flt,
         utime,
-        stime,
-        cutime,
+        stime;
+    long cutime,
         cstime,
         priority,
         nice,
         num_threads,
-        it_real_value,
-        start_time,
-        vsize,
-        rss;
+        it_real_value;
+    unsigned long long start_time;
+    unsigned long vsize;
+    long rss;
+    unsigned long rsslim;
 };
 
 int getCpuUsageInfo(int &cpuTotalTime, int &cpuIdleTime)
@@ -103,7 +104,6 @@ int getProcInfo(Process &proc, int &cpuTime)
     fileName += "/proc/";
     fileName += pidStr;
     fileName += "/stat";
-
     if ((stream = fopen(fileName.c_str(), "r")) == NULL)
     {
         fprintf(stderr, string(string("Can not open file ")+fileName+string("\n")).c_str());
@@ -112,8 +112,18 @@ int getProcInfo(Process &proc, int &cpuTime)
     fgets(buf, 1000, stream);
     fclose(stream);
     char comm[1000],task_state[100];
-    sscanf(buf, "%*d %s %s %d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d",
-           comm,
+
+    char *front, *tail;
+    front = strchr(buf, '(') + 1;
+    tail = strrchr(buf, ')');
+    int num = tail - front;
+    if (num >= sizeof(comm))
+        num = sizeof(comm) - 1;
+    memcpy(comm, front, num);
+    comm[num] = '\0';
+    front = tail + 2;
+
+    sscanf(front, "%s %d%d%d%d%d%u%lu%lu%lu%lu%lu%lu%ld%ld%ld%ld%ld%ld%llu%lu%ld%lu",
            task_state,
            &proc.ppid,
            &proc.pgid,
@@ -135,7 +145,8 @@ int getProcInfo(Process &proc, int &cpuTime)
            &proc.it_real_value,
            &proc.start_time,
            &proc.vsize,
-           &proc.rss);
+           &proc.rss,
+           &proc.rsslim);
     proc.comm=comm;
     proc.task_state=task_state;
     cpuTime = proc.utime + proc.stime + proc.cutime + proc.cstime;
@@ -232,9 +243,25 @@ int unitTest2()
     return 0;
 }
 
+int unitTest3()
+{
+    int sz = getpagesize();
+    vector<Process> processList;
+    double usage;
+    getProcessList(processList);
+    for(size_t i = 0; i < processList.size(); i++)
+    {
+        if(processList[i].rss==0)continue;
+        cout<<"<<<<<<<<<<<<\n"
+        <<processList[i].pid<<"\n"
+        <<processList[i].rss<<"\n";
+    }
+    return 0;
+}
+
 int main()
 {
-    unitTest2();
+    unitTest3();
 }
 
 
