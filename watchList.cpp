@@ -50,6 +50,7 @@ int openWatchList(vector<Process>&watchList)
     while(fscanf(file,"%d",pid)!=EOF)
     {
         Process proc;
+        proc.pid=pid;
         if(getProcInfo(proc, proc.cpuTime))continue;
         unsigned long time;
         getCpuUsageInfo(proc.cpuTotalTime,time);
@@ -58,5 +59,33 @@ int openWatchList(vector<Process>&watchList)
     }
 
     fclose(file);
+    return 0;
+}
+
+int updateWatchList(vector<Process>&watchList,vector<Process>&emailList)
+{
+    emailList.clear();
+    for(size_t i = 0; i < watchList.size(); i++)
+    {
+        Process proc;
+        proc.pid=watchList[i].pid;
+        if(getProcInfo(proc, proc.cpuTime))
+        {
+            emailList.push_back(watchList[i]);
+            watchList.erase(watchList.begin()+i);
+            i--;
+        }
+        unsigned long time;
+        getCpuUsageInfo(proc.cpuTotalTime,time);
+        proc.cpuUsage=(double)(proc.cpuTime - watchList[i].cpuTime) /
+               (double)(proc.cpuTotalTime - watchList[i].cpuTotalTime);
+        if(watchList[i].task_state!=proc.task_state)
+        {
+            emailList.push_back(watchList[i]);
+        }
+        watchList[i]=proc;
+    }
+
+
     return 0;
 }

@@ -214,6 +214,7 @@ int getProcessListWithOutCpuUsageFirst(vector<Process> &processList)
         if(getProcInfo(processList[i],processList[i].cpuTime))
         {
             processList.erase(processList.begin()+i);
+            i--;
             continue;
         }
         unsigned long time;
@@ -252,6 +253,7 @@ int getProcessListWithOutCpuUsageUpdate(vector<Process> &processList)
         if(getProcInfo(processListNew[i],processListNew[i].cpuTime))
         {
             processListNew.erase(processListNew.begin()+i);
+            i--;
             continue;
         }
         processListNew[i].cpuUsage=0;
