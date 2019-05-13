@@ -41,5 +41,7 @@ struct Process
 
 int getCpuUsage(double &cpuUsage);
 int getProcessList(vector<Process> &processList);
+int getProcInfo(Process &proc, unsigned long &cpuTime);
+int getCpuUsageInfo(unsigned long &cpuTotalTime, unsigned long &cpuIdleTime);
 
 #endif
