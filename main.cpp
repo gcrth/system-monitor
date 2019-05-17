@@ -1,4 +1,30 @@
-#include <main.h>
+#include "affinity.h"
+#include "processList.h"
+#include "watchList.h"
+
+//linux head
+#include <getopt.h>
+
+//c head
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+//cpp head
+#include <iostream>
+#include <string>
+#include <queue>
+#include <stack>
+#include <vector>
+#include <functional>
+#include <algorithm>
+#include <cassert>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
+using namespace std;
 
 const int ERRORSTATE = -1;
 
@@ -27,59 +53,52 @@ int startGui()
     return 0;
 }
 
-bool listenerStay=true;
-string order;
-mutex muForOrder;
-condition_variable cvForProcessOrder;
-bool processed = false;
-bool orderWaitToProcess=false;
-
-int listener()
-{
-    while(listenerStay)
-    {
-        std::unique_lock<std::mutex> lck(muForOrder);
-        cin>>order;  
-        orderWaitToProcess=true;
-        while(!processed)
-        {
-            cvForProcessOrder.wait(lck);
-        }         
-    }
-}
-
-int mainloop(int state)
-{
-    thread listenerThread(listener);
-    bool breakFlag = false;
-    while (!breakFlag)
-    {
-        switch (state)
-        {
-        case 0:
-        while(true)//Main Monitor
-        {
-
-        }
-        break;
-        case 1:
-        while(true)//Watch List
-        {
-
-        }
-        break;
-        }
-    }
-}
-
 int showMainMonitor()
 {
+
     return 0;
 }
 
 int showWatchList()
 {
+
     return 0;
+}
+
+int mainloop(int state) //msg loop
+{
+    bool breakFlag = false;
+    switch (state) //init
+    {
+    case 0:
+        //Main Monitor
+        {
+        }
+        break;
+    case 1:
+        //Watch List
+        {
+        }
+        break;
+    }
+    while (!breakFlag)
+    {
+        switch (state)
+        {
+        case 0:
+            while (true) //Main Monitor
+            {
+                showMainMonitor();
+            }
+            break;
+        case 1:
+            while (true) //Watch List
+            {
+                showWatchList();
+            }
+            break;
+        }
+    }
 }
 
 int appmain(int argc, char *argv[])
@@ -100,14 +119,14 @@ int appmain(int argc, char *argv[])
 
         case 'a': //monitor all
         {
-            showMainMonitor();
+            mainloop(0);
             return 0;
         }
         break;
 
         case 'w': //watch some process
         {
-            showWatchList();
+            mainloop(1);
             return 0;
         }
         break;
@@ -126,7 +145,7 @@ int appmain(int argc, char *argv[])
         }
         }
     }
-    showMainMonitor();
+    mainloop(0);
     return 0;
 }
 
