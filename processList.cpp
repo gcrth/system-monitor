@@ -121,7 +121,7 @@ int getProcInfo(Process &proc, unsigned long &cpuTime)
     proc.comm=comm;
     proc.task_state=task_state;
     cpuTime = proc.utime + proc.stime + proc.cutime + proc.cstime;
-
+    proc.cpuTime=proc.utime + proc.stime + proc.cutime + proc.cstime;
     return 0;
 }
 
@@ -145,6 +145,8 @@ int getProcCpuUsage(Process &proc,double &procCpuUsage)
     usleep(50000);
     if(getProcInfo(proc,procCpuTime2))return -1;
     if(getCpuUsageInfo(cpuTotalTime2, cpuIdleTime2))return -1;
+    proc.cpuTime=procCpuTime2;
+    proc.cpuTotalTime=cpuTotalTime2;
     procCpuUsage=(double)(procCpuTime2 - procCpuTime1) /
                (double)(cpuTotalTime2 - cpuTotalTime1);
 
@@ -187,7 +189,7 @@ int getProcessList(vector<Process> &processList)
     return 0;
 }
 
-int getProcessListWithOutCpuUsageFirst(vector<Process> &processList)
+int getProcessListWithOutCpuUsage(vector<Process> &processList)
 {
     processList.clear();
     struct stat statInfo;
@@ -226,7 +228,7 @@ int getProcessListWithOutCpuUsageFirst(vector<Process> &processList)
     return 0;
 }
 
-int getProcessListWithOutCpuUsageUpdate(vector<Process> &processList)
+int updateProcessList(vector<Process> &processList)
 {
     vector<Process> processListNew;
     struct stat statInfo;

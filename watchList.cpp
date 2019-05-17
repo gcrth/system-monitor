@@ -35,7 +35,7 @@ int saveWatchList(vector<Process>watchList)
     file=fopen("watchList.txt","w");
     for(size_t i = 0; i < watchList.size(); i++)
     {
-        fprintf(file,"%d",watchList[i].pid);
+        fprintf(file,"%d\n",watchList[i].pid);
     }
     fclose(file);
     return 0;
@@ -47,7 +47,7 @@ int openWatchList(vector<Process>&watchList)
     file=fopen("watchList.txt","r");
     pid_t pid;
     watchList.clear();
-    while(fscanf(file,"%d",pid)!=EOF)
+    while(fscanf(file,"%d\n",pid)!=EOF)
     {
         Process proc;
         proc.pid=pid;
@@ -71,6 +71,7 @@ int updateWatchList(vector<Process>&watchList,vector<Process>&emailList)
         proc.pid=watchList[i].pid;
         if(getProcInfo(proc, proc.cpuTime))
         {
+            watchList[i].task_state="end";
             emailList.push_back(watchList[i]);
             watchList.erase(watchList.begin()+i);
             i--;
@@ -85,7 +86,6 @@ int updateWatchList(vector<Process>&watchList,vector<Process>&emailList)
         }
         watchList[i]=proc;
     }
-
 
     return 0;
 }

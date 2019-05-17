@@ -1,3 +1,5 @@
+# usage in C: system("python emailSend.py");
+
 import smtplib
 import time
 from email.mime.text import MIMEText

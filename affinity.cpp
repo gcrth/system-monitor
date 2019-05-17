@@ -3,7 +3,7 @@
 //linux head
 #include <getopt.h>
 #include <sched.h>
-#include <unistd.h> 
+#include <unistd.h>
 
 //c head
 #include <math.h>
@@ -27,7 +27,7 @@
 using namespace std;
 
 #define debug
-#define unitTest 
+#define unitTest
 
 /* -------------------------------------
 setProcessAffinity
@@ -63,7 +63,7 @@ int setProcessAffinity(int pid)
 #ifdef debug
     /* get logical cpu number */
     nrcpus = sysconf(_SC_NPROCESSORS_CONF);
-    cout<<pid<<endl;
+    cout << pid << endl;
     /* Get the CPU affinity for a pid */
     if (sched_getaffinity(pid, sizeof(cpu_set_t), &mask) == -1)
     {
@@ -78,7 +78,7 @@ int setProcessAffinity(int pid)
         }
     }
     printf("bitmask = %#lx\n", bitmask);
-    cout<<"<<<<<<<<<<<<<<\n";
+    cout << "<<<<<<<<<<<<<<\n";
 #endif
 
     return 0;
@@ -114,7 +114,7 @@ int clearProcessAffinity(int pid)
 #ifdef debug
     /* get logical cpu number */
     nrcpus = sysconf(_SC_NPROCESSORS_CONF);
-    cout<<pid<<endl;
+    cout << pid << endl;
     /* Get the CPU affinity for a pid */
     if (sched_getaffinity(pid, sizeof(cpu_set_t), &mask) == -1)
     {
@@ -129,37 +129,37 @@ int clearProcessAffinity(int pid)
         }
     }
     printf("bitmask = %#lx\n", bitmask);
-    cout<<"<<<<<<<<<<<<<<\n";
+    cout << "<<<<<<<<<<<<<<\n";
 #endif
 
     return 0;
 }
 
-int spareOneCore(vector<int>&operateRecord)
+int spareOneCore(vector<int> &operateRecord)
 {
     operateRecord.clear();
-    vector<Process>processList;
+    vector<Process> processList;
     getProcessList(processList);
-    for(size_t i = 0; i < processList.size(); i++)
+    for (size_t i = 0; i < processList.size(); i++)
     {
-        if(processList[i].cpuUsage>0.2)
+        if (processList[i].cpuUsage > 0.2)
         {
-            operateRecord.push_back(processList[i].pid);
-            setProcessAffinity(processList[i].pid);
+            if (setProcessAffinity(processList[i].pid))
+                operateRecord.push_back(processList[i].pid);
         }
     }
-    
+
     return 0;
 }
 
-int undoSpare(vector<int>&operateRecord)
+int undoSpare(vector<int> &operateRecord)
 {
-    int len=operateRecord.size();
-    for(size_t i = 0; i < len; i++)
+    int len = operateRecord.size();
+    for (size_t i = 0; i < len; i++)
     {
         clearProcessAffinity(operateRecord[i]);
     }
-    
+
     return 0;
 }
 
@@ -167,7 +167,7 @@ int undoSpare(vector<int>&operateRecord)
 
 int unitTest1()
 {
-    vector<int>operateRecord;
+    vector<int> operateRecord;
     spareOneCore(operateRecord);
     undoSpare(operateRecord);
     return 0;
