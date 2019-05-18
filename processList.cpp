@@ -34,6 +34,7 @@
 using namespace std;
 
 // #define unitTest
+// #define debug
 
 int getCpuUsageInfo(unsigned long &cpuTotalTime, unsigned long &cpuIdleTime)
 {
@@ -42,22 +43,24 @@ int getCpuUsageInfo(unsigned long &cpuTotalTime, unsigned long &cpuIdleTime)
 
     if ((stream = fopen("/proc/stat", "r")) == NULL)
     {
+#ifdef debug
         fprintf(stderr, "Can not open file /proc/stat.\n");
+#endif
         return -1;
     }
     fgets(buf, 1000, stream);
     fclose(stream);
     int user, nice, system, idle, iowait, irq, softirq, stealstolen, guest, extTime;
     sscanf(buf + 5, "%d%d%d%d%d%d%d%d%d%d",
-           &user, 
-           &nice, 
-           &system, 
-           &idle, 
-           &iowait, 
-           &irq, 
-           &softirq, 
-           &stealstolen, 
-           &guest, 
+           &user,
+           &nice,
+           &system,
+           &idle,
+           &iowait,
+           &irq,
+           &softirq,
+           &stealstolen,
+           &guest,
            &extTime);
     cpuTotalTime = user + nice + system + idle + iowait + irq + softirq + stealstolen + guest + extTime;
     cpuIdleTime = idle;
@@ -70,19 +73,21 @@ int getProcInfo(Process &proc, unsigned long &cpuTime)
     FILE *stream;
     char buf[1000];
     char pidStr[100];
-    sprintf(pidStr,"%d",proc.pid);
+    sprintf(pidStr, "%d", proc.pid);
     string fileName;
     fileName += "/proc/";
     fileName += pidStr;
     fileName += "/stat";
     if ((stream = fopen(fileName.c_str(), "r")) == NULL)
     {
-        fprintf(stderr, string(string("Can not open file ")+fileName+string("\n")).c_str());
+#ifdef debug
+        fprintf(stderr, string(string("Can not open file ") + fileName + string("\n")).c_str());
+#endif
         return -1;
     }
     fgets(buf, 1000, stream);
     fclose(stream);
-    char comm[1000],task_state[100];
+    char comm[1000], task_state[100];
 
     char *front, *tail;
     front = strchr(buf, '(') + 1;
@@ -118,73 +123,54 @@ int getProcInfo(Process &proc, unsigned long &cpuTime)
            &proc.vsize,
            &proc.rss,
            &proc.rsslim);
-    proc.comm=comm;
-    proc.task_state=task_state;
+    proc.comm = comm;
+    proc.task_state = task_state;
     cpuTime = proc.utime + proc.stime + proc.cutime + proc.cstime;
-    proc.cpuTime=proc.utime + proc.stime + proc.cutime + proc.cstime;
+    proc.cpuTime = proc.utime + proc.stime + proc.cutime + proc.cstime;
     return 0;
 }
 
 int getCpuUsage(double &cpuUsage)
 {
-    unsigned long cpuTotalTime1,cpuTotalTime2,cpuIdleTime1,cpuIdleTime2;
-    if(getCpuUsageInfo(cpuTotalTime1, cpuIdleTime1))return -1;
+    unsigned long cpuTotalTime1, cpuTotalTime2, cpuIdleTime1, cpuIdleTime2;
+    if (getCpuUsageInfo(cpuTotalTime1, cpuIdleTime1))
+        return -1;
     usleep(50000);
-    if(getCpuUsageInfo(cpuTotalTime2, cpuIdleTime2))return -1;
+    if (getCpuUsageInfo(cpuTotalTime2, cpuIdleTime2))
+        return -1;
     cpuUsage = (double)(cpuTotalTime2 - cpuTotalTime1 - cpuIdleTime2 + cpuIdleTime1) /
                (double)(cpuTotalTime2 - cpuTotalTime1);
     return 0;
 }
 
-int getProcCpuUsage(Process &proc,double &procCpuUsage)
+int getProcInfoIncludeCpuUsage(Process &proc, double &procCpuUsage)
 {
-    unsigned long procCpuTime1,procCpuTime2;
-    unsigned long cpuTotalTime1,cpuTotalTime2,cpuIdleTime1,cpuIdleTime2;
-    if(getProcInfo(proc,procCpuTime1))return -1;
-    if(getCpuUsageInfo(cpuTotalTime1, cpuIdleTime1))return -1;
+    unsigned long procCpuTime1, procCpuTime2;
+    unsigned long cpuTotalTime1, cpuTotalTime2, cpuIdleTime1, cpuIdleTime2;
+    if (getProcInfo(proc, procCpuTime1))
+        return -1;
+    if (getCpuUsageInfo(cpuTotalTime1, cpuIdleTime1))
+        return -1;
     usleep(50000);
-    if(getProcInfo(proc,procCpuTime2))return -1;
-    if(getCpuUsageInfo(cpuTotalTime2, cpuIdleTime2))return -1;
-    proc.cpuTime=procCpuTime2;
-    proc.cpuTotalTime=cpuTotalTime2;
-    procCpuUsage=(double)(procCpuTime2 - procCpuTime1) /
-               (double)(cpuTotalTime2 - cpuTotalTime1);
+    if (getProcInfo(proc, procCpuTime2))
+        return -1;
+    if (getCpuUsageInfo(cpuTotalTime2, cpuIdleTime2))
+        return -1;
+    proc.cpuTime = procCpuTime2;
+    proc.cpuTotalTime = cpuTotalTime2;
+    proc.cpuUsage=(double)(procCpuTime2 - procCpuTime1) /
+                   (double)(cpuTotalTime2 - cpuTotalTime1);
+    procCpuUsage = (double)(procCpuTime2 - procCpuTime1) /
+                   (double)(cpuTotalTime2 - cpuTotalTime1);
 
     return 0;
 }
 
 int getProcessList(vector<Process> &processList)
 {
-    processList.clear();
-    struct stat statInfo;
-    DIR *dir;
-    struct dirent *ent;
-
-    dir = opendir("/proc");
-
-    while ((ent = readdir(dir)) != (struct dirent *)NULL)
-    {
-        if (*ent->d_name > '0' && *ent->d_name <= '9')
-        {
-            pid_t pid;
-            sscanf(ent->d_name, "%d", &pid);
-            Process proc;
-            proc.pid=pid;
-            processList.push_back(proc);
-        }
-    }
-    closedir(dir);
-    for(size_t i = 0; i < processList.size(); i++)
-    {
-        double usage;
-        if(getProcInfo(processList[i],processList[i].cpuTime))
-        {
-            processList.erase(processList.begin()+i);
-            continue;
-        }
-        processList[i].cpuUsage=usage;
-    }
-    
+    getProcessListWithOutCpuUsage(processList);
+    sleep(1);
+    updateProcessList(processList);
 
     return 0;
 }
@@ -205,25 +191,24 @@ int getProcessListWithOutCpuUsage(vector<Process> &processList)
             pid_t pid;
             sscanf(ent->d_name, "%d", &pid);
             Process proc;
-            proc.pid=pid;
+            proc.pid = pid;
             processList.push_back(proc);
         }
     }
     closedir(dir);
-    for(size_t i = 0; i < processList.size(); i++)
+    for (size_t i = 0; i < processList.size(); i++)
     {
         double usage;
-        if(getProcInfo(processList[i],processList[i].cpuTime))
+        if (getProcInfo(processList[i], processList[i].cpuTime))
         {
-            processList.erase(processList.begin()+i);
+            processList.erase(processList.begin() + i);
             i--;
             continue;
         }
         unsigned long time;
-        getCpuUsageInfo(processList[i].cpuTotalTime,time);
-        processList[i].cpuUsage=0;
+        getCpuUsageInfo(processList[i].cpuTotalTime, time);
+        processList[i].cpuUsage = 0;
     }
-    
 
     return 0;
 }
@@ -244,49 +229,55 @@ int updateProcessList(vector<Process> &processList)
             pid_t pid;
             sscanf(ent->d_name, "%d", &pid);
             Process proc;
-            proc.pid=pid;
+            proc.pid = pid;
             processListNew.push_back(proc);
         }
     }
     closedir(dir);
-    for(size_t i = 0; i < processListNew.size(); i++)
+    for (size_t i = 0; i < processListNew.size(); i++)
     {
         double usage;
-        if(getProcInfo(processListNew[i],processListNew[i].cpuTime))
+        if (getProcInfo(processListNew[i], processListNew[i].cpuTime))
         {
-            processListNew.erase(processListNew.begin()+i);
+            processListNew.erase(processListNew.begin() + i);
             i--;
             continue;
         }
-        processListNew[i].cpuUsage=0;
+        unsigned long time;
+        getCpuUsageInfo(processListNew[i].cpuTotalTime, time);
+        processListNew[i].cpuUsage = 0;
     }
-    size_t j=0;
-    for(size_t i = 0; i < processListNew.size(); i++)
+    size_t j = 0;
+    for (size_t i = 0; i < processListNew.size(); i++)
     {
-        while(processList[j].pid<=processListNew[i].pid)
+        if (processListNew[i].pid == 5322)
         {
-            if(processList[j].pid==processListNew[i].pid)
+            cout << "5322";
+        }
+        while (processList[j].pid <= processListNew[i].pid)
+        {
+            if (processList[j].pid == processListNew[i].pid)
             {
-                processListNew[i].cpuUsage=(double)(processListNew[i].cpuTime - processList[j].cpuTime) /
-               (double)(processListNew[i].cpuTotalTime - processList[j].cpuTotalTime);
+                processListNew[i].cpuUsage = (double)(processListNew[i].cpuTime - processList[j].cpuTime) /
+                                             (double)(processListNew[i].cpuTotalTime - processList[j].cpuTotalTime);
             }
             j++;
         }
     }
-    processList=processListNew;
+    processList = processListNew;
 
     return 0;
 }
 
-#ifdef unitTest 
+#ifdef unitTest
 int unitTest1()
 {
     vector<Process> processList;
     double usage;
-    for(size_t i = 0; i < 20; i++)
+    for (size_t i = 0; i < 20; i++)
     {
         getCpuUsage(usage);
-        printf("%lf\n",usage);
+        printf("%lf\n", usage);
     }
     return 0;
 }
@@ -296,14 +287,15 @@ int unitTest2()
     vector<Process> processList;
     double usage;
     getProcessList(processList);
-    for(size_t i = 0; i < processList.size(); i++)
+    for (size_t i = 0; i < processList.size(); i++)
     {
-        if(processList[i].cpuUsage==0)continue;
-        cout<<"<<<<<<<<<<<<\n"
-        <<processList[i].pid<<"\n"
-        <<processList[i].cpuUsage<<"\n";
+        if (processList[i].cpuUsage == 0)
+            continue;
+        cout << "<<<<<<<<<<<<\n"
+             << processList[i].pid << "\n"
+             << processList[i].cpuUsage << "\n";
     }
-    
+
     return 0;
 }
 
@@ -313,20 +305,38 @@ int unitTest3()
     vector<Process> processList;
     double usage;
     getProcessList(processList);
-    for(size_t i = 0; i < processList.size(); i++)
+    for (size_t i = 0; i < processList.size(); i++)
     {
-        if(processList[i].rss==0)continue;
-        cout<<"<<<<<<<<<<<<\n"
-        <<processList[i].pid<<"\n"
-        <<processList[i].rss<<"\n";
+        if (processList[i].rss == 0)
+            continue;
+        cout << "<<<<<<<<<<<<\n"
+             << processList[i].pid << "\n"
+             << processList[i].rss << "\n";
+    }
+    return 0;
+}
+
+int unitTest4()
+{
+    vector<Process> processList;
+    getProcessListWithOutCpuUsage(processList);
+    sleep(1);
+    updateProcessList(processList);
+    for (size_t i = 0; i < processList.size(); i++)
+    {
+        if (processList[i].cpuUsage == 0)
+            continue;
+        cout << "<<<<<<<<<<<<\n"
+             << processList[i].pid << "\n"
+             << processList[i].cpuUsage << "\n"
+             << processList[i].rss << "\n";
     }
     return 0;
 }
 
 int main()
 {
-    unitTest1();
+    unitTest2();
 }
-
 
 #endif

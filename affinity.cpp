@@ -26,8 +26,8 @@
 
 using namespace std;
 
-#define debug
-#define unitTest
+// #define debug
+// #define unitTest
 
 /* -------------------------------------
 setProcessAffinity
@@ -142,7 +142,7 @@ int spareOneCore(vector<int> &operateRecord)
     getProcessList(processList);
     for (size_t i = 0; i < processList.size(); i++)
     {
-        if (processList[i].cpuUsage > 0.2)
+        if (processList[i].cpuUsage > 0.1)
         {
             if (setProcessAffinity(processList[i].pid))
                 operateRecord.push_back(processList[i].pid);
@@ -169,7 +169,12 @@ int unitTest1()
 {
     vector<int> operateRecord;
     spareOneCore(operateRecord);
-    undoSpare(operateRecord);
+    for (size_t i = 0; i < operateRecord.size(); i++)
+    {
+        cout<<operateRecord[i]<<endl;
+    }
+    
+    // undoSpare(operateRecord);
     return 0;
 }
 

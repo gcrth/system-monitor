@@ -44,7 +44,7 @@ int getCpuUsage(double &cpuUsage);
 /*>>>>>>>>>>>>>>>>>>>>
 usage for getProcessList
 you should give a clear vector as a param, and you can get for a vector filled of inform.
-however, it may take upto one min.
+however, it may take seconds.
 you should use getProcessListWithOutCpuUsage for quick response.
 inform from /proc/[pid]/stat
 >>>>>>>>>>>>>>>>>>>>*/
@@ -55,6 +55,12 @@ usage for getProcInfo
 for watchList.cpp only, do not use
 >>>>>>>>>>>>>>>>>>>>*/
 int getProcInfo(Process &proc, unsigned long &cpuTime);
+
+/*>>>>>>>>>>>>>>>>>>>>
+usage for getProcInfoIncludeCpuUsage
+for watchList.cpp only, do not use
+>>>>>>>>>>>>>>>>>>>>*/
+int getProcInfoIncludeCpuUsage(Process &proc, double &procCpuUsage);
 
 /*>>>>>>>>>>>>>>>>>>>>
 usage for getCpuUsageInfo

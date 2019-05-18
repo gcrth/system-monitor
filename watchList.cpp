@@ -1,4 +1,4 @@
-#include "affinity.h"
+// #include "affinity.h"
 #include "processList.h"
 //linux head
 #include <getopt.h>
@@ -47,8 +47,9 @@ int openWatchList(vector<Process>&watchList)
     file=fopen("watchList.txt","r");
     pid_t pid;
     watchList.clear();
-    while(fscanf(file,"%d\n",pid)!=EOF)
+    while(!feof(file))
     {
+        fscanf(file,"%d\n",&pid);
         Process proc;
         proc.pid=pid;
         if(getProcInfo(proc, proc.cpuTime))continue;
@@ -75,6 +76,7 @@ int updateWatchList(vector<Process>&watchList,vector<Process>&emailList)
             emailList.push_back(watchList[i]);
             watchList.erase(watchList.begin()+i);
             i--;
+            continue;
         }
         unsigned long time;
         getCpuUsageInfo(proc.cpuTotalTime,time);
@@ -89,3 +91,43 @@ int updateWatchList(vector<Process>&watchList,vector<Process>&emailList)
 
     return 0;
 }
+
+int addProcess(pid_t pid,vector<Process>&watchList)
+{
+    for (size_t i = 0; i < watchList.size(); i++)
+    {
+        if(watchList[i].pid==pid)return -1;
+    }
+    Process proc;
+    proc.pid=pid;
+    if(getProcInfoIncludeCpuUsage(proc,proc.cpuUsage))return 0;
+    watchList.push_back(proc);
+    return 0;
+}
+
+#ifdef unitTest
+
+int unitTest1()
+{
+    vector<Process>watchList,emailList;
+    addProcess(10564,watchList);
+    saveWatchList(watchList);
+    openWatchList(watchList);
+    sleep(1);
+    updateWatchList(watchList,emailList);
+    for (size_t i = 0; i < emailList.size(); i++)
+    {
+        cout<<emailList[i].pid<<endl;
+    }
+    
+    cout<<endl;
+    return 0;
+}
+
+int main()
+{
+    unitTest1();
+    return 0;
+}
+
+#endif
