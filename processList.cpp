@@ -143,6 +143,29 @@ int getCpuUsage(double &cpuUsage)
     return 0;
 }
 
+int getMemInfo(MemInfo &memInfo)
+{
+    FILE *stream;
+    char buf[1000];
+
+    if ((stream = fopen("/proc/meminfo", "r")) == NULL)
+    {
+#ifdef debug
+        fprintf(stderr, "Can not open file /proc/stat.\n");
+#endif
+        return -1;
+    }
+    fgets(buf, 1000, stream);
+    sscanf(buf, "MemTotal:%lu", &memInfo.MemTotal);
+    fgets(buf, 1000, stream);
+    sscanf(buf, "MemFree:%lu", &memInfo.MemFree);
+    fgets(buf, 1000, stream);
+    sscanf(buf, "MemAvailable:%lu", &memInfo.MemAvailable);
+    fclose(stream);
+
+    return 0;
+}
+
 int getProcInfoIncludeCpuUsage(Process &proc, double &procCpuUsage)
 {
     unsigned long procCpuTime1, procCpuTime2;
@@ -334,9 +357,19 @@ int unitTest4()
     return 0;
 }
 
+int unitTest5()
+{
+    MemInfo memInfo;
+    getMemInfo(memInfo);
+    cout << memInfo.MemTotal << endl
+         << memInfo.MemFree << endl
+         << memInfo.MemAvailable << endl;
+    return 0;
+}
+
 int main()
 {
-    unitTest2();
+    unitTest5();
 }
 
 #endif

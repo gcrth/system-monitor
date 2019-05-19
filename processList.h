@@ -39,7 +39,16 @@ struct Process
     unsigned long rsslim;
 };
 
+struct MemInfo
+{
+    unsigned long MemTotal,
+        MemFree,
+        MemAvailable;//in kB
+};
+
 int getCpuUsage(double &cpuUsage);
+
+int getMemInfo(MemInfo&memInfo);
 
 /*>>>>>>>>>>>>>>>>>>>>
 usage for getProcessList
