@@ -100,7 +100,7 @@ int addProcess(pid_t pid,vector<Process>&watchList)
     }
     Process proc;
     proc.pid=pid;
-    if(getProcInfoIncludeCpuUsage(proc,proc.cpuUsage))return 0;
+    if(getProcInfoIncludeCpuUsage(proc,proc.cpuUsage))return -2;
     watchList.push_back(proc);
     return 0;
 }
