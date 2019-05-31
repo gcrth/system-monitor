@@ -32,4 +32,6 @@ inform from /proc/[pid]/stat
 >>>>>>>>>>>>>>>>>>>>*/
 int updateWatchList(vector<Process>&watchList,vector<Process>&emailList);
 
+
+int addProcess(pid_t pid,vector<Process>&watchList);
 #endif
